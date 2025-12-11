@@ -133,8 +133,18 @@ class NewsPanel(Static):
         news_list_container.clear()
         
         for item in news_items:
+            sentiment_emoji = ""
+            if item['sentiment'] == "Bullish":
+                sentiment_emoji = "🟢 "
+            elif item['sentiment'] == "Bearish":
+                sentiment_emoji = "🔴 "
+            else:
+                sentiment_emoji = "⚪ "
+            
+            asset_tags = "".join([f"[#00ffff][{asset}][/]" for asset in item['assets']])
+            
             news_list_container.mount(
-                Label(f"[bold #00ffff]>>[/bold #00ffff] [link={item['link']}]{item['title']}[/link] ([#00ff00]{item['source']}[/#00ff00])",
+                Label(f"{sentiment_emoji}{asset_tags} [link={item['link']}]{item['title']}[/link] ([#00ff00]{item['source']}[/#00ff00])",
                       classes="news-item")
             )
 
