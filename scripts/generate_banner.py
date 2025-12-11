@@ -6,7 +6,7 @@ def create_banner():
     # Settings
     WIDTH = 1280
     HEIGHT = 640
-    BG_COLOR = (15, 17, 26)  # Dark #0f111a
+    BG_COLOR = (14, 16, 25)  # Darker #0e1019 to force cache update
     ACCENT_COLOR = (0, 255, 0) # Neon Green
     GRID_COLOR = (0, 60, 0) # Dark Green
     TEXT_COLOR = (255, 255, 255)
