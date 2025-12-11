@@ -48,9 +48,11 @@ We track the entire market, but we optimize for the kings:
 ## 📸 Preview
 
 <div align="center">
-  <img src="assets/terminalcoin_demo.gif" alt="TerminalCoin Live Demo" width="100%">
-  <br>
-  <i>Live Market Data. Zero Latency. Pure Terminal.</i>
+
+![TerminalCoin Live Demo](assets/terminalcoin_demo.gif)
+
+<br>
+<i>Live Market Data. Zero Latency. Pure Terminal.</i>
 </div>
 
 ## 🛠️ Installation
