@@ -35,23 +35,15 @@
 
 We track the entire market, but we optimize for the kings:
 
-```text
-      ..                  
-     .:::.        BITCOIN  
-    .:::::.       [BTC]    
-  ..:::::::..     The Standard.
-    ':::::'       
-      ':'                  
-```
-```text
-      /\          ETHEREUM
-     /  \         [ETH]
-    /    \        The Computer.
-   /______\       
-     \    /       
-      \  /        
-       \/         
-```
+<p align="center">
+  <img src="assets/icon_btc.png" width="200" alt="Bitcoin">
+  <img src="assets/icon_eth.png" width="200" alt="Ethereum">
+</p>
+
+<p align="center">
+  <b>BITCOIN [BTC]</b> - The Standard.&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+  <b>ETHEREUM [ETH]</b> - The Computer.
+</p>
 
 ## 📸 Preview
 
