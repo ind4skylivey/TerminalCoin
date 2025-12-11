@@ -89,7 +89,7 @@ def create_banner():
     draw.ellipse([(100, 35), (115, 50)], fill=(39, 201, 63)) # Green
     
     # Save
-    output_path = "assets/banner.png"
+    output_path = "assets/terminal_banner.png"
     img.save(output_path)
     print(f"Banner generated successfully: {output_path}")
 

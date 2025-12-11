@@ -1,6 +1,6 @@
 <div align="center">
 
-![TerminalCoin Banner](assets/banner.png)
+![TerminalCoin Banner](assets/terminal_banner.png)
 
 ### The Crypto Terminal Dashboard for the Sovereign Developer
 
