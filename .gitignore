@@ -50,3 +50,8 @@ ENV/
 .DS_Store
 Thumbs.db
 DEBUG_REPORT.md
+
+# Recording scripts and files
+record_demo.sh
+*.cast
+*.gif
