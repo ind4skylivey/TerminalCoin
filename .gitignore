@@ -55,3 +55,4 @@ DEBUG_REPORT.md
 record_demo.sh
 *.cast
 *.gif
+!assets/terminalcoin_demo.gif
