@@ -1,54 +1,115 @@
-# TerminalCoin 🪙
+<div align="center">
 
-> **Crypto Dashboard CLI/TUI** - Precios, tendencias y datos de mercado en tiempo real, directamente en tu terminal.
+```
+████████╗███████╗██████╗ ███╗   ███╗██╗███╗   ██╗ █████╗ ██╗      
+╚══██╔══╝██╔════╝██╔══██╗████╗ ████║██║████╗  ██║██╔══██╗██║      
+   ██║   █████╗  ██████╔╝██╔████╔██║██║██╔██╗ ██║███████║██║      
+   ██║   ██╔══╝  ██╔══██╗██║╚██╔╝██║██║██║╚██╗██║██╔══██║██║      
+   ██║   ███████╗██║  ██║██║ ╚═╝ ██║██║██║ ╚████║██║  ██║███████╗
+   ╚═╝   ╚══════╝╚═╝  ╚═╝╚═╝     ╚═╝╚═╝╚═╝  ╚═══╝╚═╝  ╚═╝╚══════╝
+                                                      
+             ██████╗  ██████╗ ██╗███╗   ██╗                       
+            ██╔════╝ ██╔═══██╗██║████╗  ██║                       
+            ██║      ██║   ██║██║██╔██╗ ██║                       
+            ██║      ██║   ██║██║██║╚██╗██║                       
+            ╚██████╗ ╚██████╔╝██║██║ ╚████║                       
+             ╚═════╝  ╚═════╝ ╚═╝╚═╝  ╚═══╝                       
+```
 
-![License](https://img.shields.io/badge/license-MIT-green)
-![Python](https://img.shields.io/badge/python-3.8+-blue)
+### The Crypto Terminal Dashboard for the Sovereign Developer
 
-## 🖥️ Descripción
+[![Python](https://img.shields.io/badge/Python-3.8+-ffe100?style=for-the-badge&logo=python&logoColor=black)](https://python.org)
+[![Textual](https://img.shields.io/badge/TUI-Textual-00ff00?style=for-the-badge&logo=terminal&logoColor=black)](https://textual.textualize.io/)
+[![License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)](LICENSE)
+[![Status](https://img.shields.io/badge/Status-Beta-orange?style=for-the-badge)]()
 
-TerminalCoin es un dashboard de criptomonedas con una interfaz estilo **cyberpunk/hacker**. Diseñado para desarrolladores y entusiastas de la terminal que necesitan visualizar el mercado sin abrir un navegador pesado.
+</div>
 
-### ✨ Características Principales
+---
 
-*   **Live Ticker:** Precios en tiempo real de las top 100 criptomonedas.
-*   **Diseño TUI:** Interfaz rica en terminal usando `Textual` (soporte para mouse y teclado).
-*   **Ligero:** Bajo consumo de recursos.
-*   **Estética Hacker:** Colores neón, gráficos ASCII y diseño minimalista.
+## ⚡ The Philosophy
 
-## 🚀 Instalación
+**Web browsers are bloated.** Tracking scripts, heavy JavaScript, and distracting ads have no place in a trader's sanctuary.
+
+**TerminalCoin** brings the market back to where it belongs: the Command Line. Fast, resource-efficient, and purely focused on data. It combines the raw power of `ssh` aesthetics with modern reactive UI technology.
+
+> *"Don't trust, verify. Don't browse, curl."*
+
+## 💎 Features
+
+*   **🚀 Real-Time Ticker:** Live price feeds for the top 100 cryptocurrencies via CoinGecko.
+*   **📉 ASCII Sparklines:** Visualize 7-day price trends directly in your terminal using character-based micro-charts.
+*   **🎨 Cyberpunk UI:** A carefully crafted neon-on-black aesthetic (Green/Cyan) designed for late-night coding sessions.
+*   **⚡ Zero Latency UX:** Keyboard-driven navigation. No mouse required (but supported).
+*   **🐧 Linux Native:** Built for the ecosystem. Pipes, virtual environments, and raw speed.
+
+## 📸 Preview
+
+*(Place a screenshot of your terminal here. For now, imagine a beautiful green glowing grid of data)*
+
+```text
++---------------------+---------------------------------------------------+
+| Market Cap Top 50   |  Bitcoin (BTC)                                    |
++---------------------+                                                   |
+| 1. BTC   $98,420    |  $98,420.00                                       |
+| 2. ETH   $3,890     |                                                   |
+| 3. SOL   $145       |  [7 Day Trend]                                    |
+| 4. BNB   $620       |   ▂▃▄▅▆▇█                                       |
+| ...                 |                                                   |
+|                     |  High 24h: $99,100                                |
+|                     |  Low 24h:  $97,200                                |
++---------------------+---------------------------------------------------+
+```
+
+## 🛠️ Installation
+
+Get up and running in seconds.
 
 ```bash
-# Clonar el repositorio
-git clone https://github.com/tu-usuario/TerminalCoin.git
+# 1. Clone the repository
+git clone https://github.com/YOUR_USERNAME/TerminalCoin.git
 cd TerminalCoin
 
-# Crear entorno virtual
+# 2. Create a virtual environment (Recommended)
 python3 -m venv venv
-source venv/bin/activate
+source venv/bin/activate  # Or 'source venv/bin/activate.fish' for fish users
 
-# Instalar dependencias
+# 3. Install dependencies
 pip install -r requirements.txt
 ```
 
-## 🎮 Uso
+## 🎮 Usage
 
-Para iniciar el dashboard:
+Launch the dashboard:
 
 ```bash
 python app.py
 ```
 
-### Controles
-*   `Click`: Seleccionar moneda para ver detalles.
-*   `q`: Salir de la aplicación.
-*   `r`: Refrescar datos manualmente.
+### Controls
 
-## 🛠️ Tecnologías
+| Key | Action |
+| :--- | :--- |
+| `q` | **Quit** the application |
+| `r` | **Refresh** data immediately |
+| `Click` | Select a coin to view details |
+| `↑/↓` | Navigate the coin list |
 
-*   [Python](https://www.python.org/)
-*   [Textual](https://textual.textualize.io/) (TUI Framework)
-*   [CoinGecko API](https://www.coingecko.com/en/api) (Datos de mercado)
+## 🗺️ Roadmap
+
+*   [x] MVP Release (Live Prices)
+*   [x] Sparkline Charts
+*   [ ] 📰 **Crypto News Feed** (RSS Integration)
+*   [ ] 👛 **Portfolio Tracker** (Local storage)
+*   [ ] 🔔 **Price Alerts** (Desktop notifications)
+
+## 🤝 Contributing
+
+Contributions are welcome. Fork the repo, create a branch, and push your code.
+**Style Guide:** Keep it dark, keep it fast.
 
 ---
-*Created for the terminal enthusiast.*
+
+<div align="center">
+Built with 💚 and ₿ by il1v3y
+</div>
