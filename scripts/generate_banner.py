@@ -88,8 +88,6 @@ def create_banner():
     draw.ellipse([(70, 35), (85, 50)], fill=(255, 189, 46)) # Yellow
     draw.ellipse([(100, 35), (115, 50)], fill=(39, 201, 63)) # Green
     
-    draw.text((WIDTH - 250, 30), "user@linux:~/TerminalCoin", font=small_font, fill=TEXT_COLOR)
-
     # Save
     output_path = "assets/banner.png"
     img.save(output_path)
