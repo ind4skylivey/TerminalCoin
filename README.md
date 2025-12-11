@@ -114,9 +114,9 @@ Contributions are welcome. Fork the repo, create a branch, and push your code.
 
 If this tool helped you snipe a gem, consider feeding the developer's caffeine addiction.
 
-*   **BTC:** `bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh` (Example)
-*   **ETH:** `0x71C7656EC7ab88b098defB751B7401B5f6d8976F` (Example)
-*   **SOL:** `GwKB7x9g8...`
+*   **BTC:** `bc1qg4he7nyq4j5r8mzq23e8shqvtvuymtmq5fur5k`
+*   **ETH:** `0x21C8864A17324e907A7DCB8d70cD2C5030c5b765`
+*   **SOL:** `BS3Nze14rdkPQQ8UkQZP4SU8uSc6de3UaVmv8gqh52eR`
 
 ---
 
