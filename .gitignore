@@ -1,3 +1,17 @@
+# Sensitive / Config
+.env
+.env.local
+config.json
+secrets.json
+*.key
+*.pem
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
 # Python
 __pycache__/
 *.py[cod]
