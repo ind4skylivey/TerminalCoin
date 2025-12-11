@@ -4,8 +4,146 @@ from textual.containers import Container, Vertical
 from textual.widgets import Header, Footer, Static, DataTable, Label
 from textual.reactive import reactive
 from textual.message import Message
+from textual.theme import Theme
+from rich.markup import escape
 
-from news_client import NewsClient # Import the new NewsClient
+from news_client import NewsClient
+
+# =============================================================================
+# CUSTOM THEMES - Using Textual's Native Theme System
+# =============================================================================
+# These themes appear in the command palette (Ctrl+P -> search "theme")
+# Colors are optimized for readability with good contrast
+
+CUSTOM_THEMES = {
+    "matrix": Theme(
+        name="matrix",
+        primary="#00ff00",          # Bright green (classic hacker)
+        secondary="#00cc88",        # Softer green for secondary
+        accent="#00ffff",           # Cyan accent
+        warning="#ffcc00",          # Yellow warning
+        error="#ff4444",            # Red error
+        success="#00ff00",          # Green success
+        foreground="#e8e8e8",       # Light gray for readability
+        background="#0a0f0a",       # Very dark green-tinted black
+        surface="#0f1a0f",          # Slightly lighter surface
+        panel="#152015",            # Panel background
+        dark=True,
+        variables={
+            "block-cursor-background": "#00ff00",
+            "block-cursor-foreground": "#000000",
+            "footer-key-foreground": "#00ff00",
+            "button-color-foreground": "#0a0f0a",
+            "border": "#00aa00",
+        },
+    ),
+    "cyberpunk": Theme(
+        name="cyberpunk",
+        primary="#ff00aa",          # Hot pink
+        secondary="#00ddff",        # Electric cyan
+        accent="#ffee00",           # Neon yellow
+        warning="#ff9900",          # Orange
+        error="#ff3366",            # Pink-red
+        success="#00ff88",          # Neon green
+        foreground="#f0f0f0",       # Bright white for contrast
+        background="#0a0015",       # Deep purple-black
+        surface="#150025",          # Purple tinted
+        panel="#200035",            # Lighter purple
+        dark=True,
+        variables={
+            "block-cursor-background": "#00ddff",
+            "block-cursor-foreground": "#0a0015",
+            "footer-key-foreground": "#ff00aa",
+            "button-color-foreground": "#0a0015",
+            "border": "#aa0077",
+        },
+    ),
+    "ocean-deep": Theme(
+        name="ocean-deep",
+        primary="#00aaff",          # Ocean blue
+        secondary="#00ddaa",        # Sea green
+        accent="#ff8855",           # Coral/sunset
+        warning="#ffbb33",          # Sandy yellow
+        error="#ff5566",            # Coral red
+        success="#00dd88",          # Sea foam
+        foreground="#e0eef8",       # Light blue-white
+        background="#050a12",       # Deep ocean black
+        surface="#0a1520",          # Dark blue
+        panel="#102030",            # Ocean depth
+        dark=True,
+        variables={
+            "block-cursor-background": "#00ddaa",
+            "block-cursor-foreground": "#050a12",
+            "footer-key-foreground": "#00aaff",
+            "button-color-foreground": "#050a12",
+            "border": "#0088cc",
+        },
+    ),
+    "solar-flare": Theme(
+        name="solar-flare",
+        primary="#ffaa00",          # Golden sun
+        secondary="#ff7700",        # Warm orange
+        accent="#ffdd00",           # Bright yellow
+        warning="#ff9900",          # Orange
+        error="#ff4433",            # Fire red
+        success="#aadd00",          # Lime
+        foreground="#fff5e0",       # Warm white
+        background="#0f0a05",       # Warm black
+        surface="#1a1008",          # Dark brown
+        panel="#251810",            # Ember
+        dark=True,
+        variables={
+            "block-cursor-background": "#ff7700",
+            "block-cursor-foreground": "#0f0a05",
+            "footer-key-foreground": "#ffaa00",
+            "button-color-foreground": "#0f0a05",
+            "border": "#cc8800",
+        },
+    ),
+    "midnight-purple": Theme(
+        name="midnight-purple",
+        primary="#aa77ff",          # Soft purple
+        secondary="#ff77aa",        # Soft pink
+        accent="#77ddff",           # Sky blue
+        warning="#ffaa55",          # Peach
+        error="#ff6677",            # Soft red
+        success="#77dd99",          # Soft green
+        foreground="#eee8f5",       # Lavender white
+        background="#0a0510",       # Deep purple-black
+        surface="#120818",          # Dark purple
+        panel="#1a1020",            # Lighter purple
+        dark=True,
+        variables={
+            "block-cursor-background": "#ff77aa",
+            "block-cursor-foreground": "#0a0510",
+            "footer-key-foreground": "#aa77ff",
+            "button-color-foreground": "#0a0510",
+            "border": "#8855cc",
+        },
+    ),
+    "monochrome": Theme(
+        name="monochrome",
+        primary="#ffffff",          # Pure white
+        secondary="#bbbbbb",        # Light gray
+        accent="#888888",           # Medium gray
+        warning="#cccccc",          # Light gray
+        error="#999999",            # Gray
+        success="#dddddd",          # Almost white
+        foreground="#e0e0e0",       # Light gray text
+        background="#080808",       # Near black
+        surface="#121212",          # Dark gray
+        panel="#1a1a1a",            # Slightly lighter
+        dark=True,
+        variables={
+            "block-cursor-background": "#ffffff",
+            "block-cursor-foreground": "#080808",
+            "footer-key-foreground": "#ffffff",
+            "button-color-foreground": "#080808",
+            "border": "#666666",
+        },
+    ),
+}
+
 
 class CoinGeckoClient:
     BASE_URL = "https://api.coingecko.com/api/v3"
@@ -23,7 +161,7 @@ class CoinGeckoClient:
             response = requests.get(url, params=params, timeout=10)
             response.raise_for_status()
             return response.json()
-        except Exception as e:
+        except Exception:
             return []
 
     def get_coin_details(self, coin_id):
@@ -40,37 +178,37 @@ class CoinGeckoClient:
             response = requests.get(url, params=params, timeout=10)
             response.raise_for_status()
             return response.json()
-        except Exception as e:
+        except Exception:
             return None
+
 
 def generate_sparkline(data, width=40):
     if not data:
         return ""
-    
-    # Resample simple (toma cada N elementos para ajustar al ancho)
+
     step = max(1, len(data) // width)
     sampled = data[::step][:width]
-    
+
     if not sampled:
         return ""
 
     min_val = min(sampled)
     max_val = max(sampled)
     diff = max_val - min_val
-    
-    # Caracteres ASCII de nivel (bloques de altura)
+
     levels = "  ▂▃▄▅▆▇█"
-    
+
     if diff == 0:
-        return levels[4] * len(sampled) # Línea plana
-        
+        return levels[4] * len(sampled)
+
     sparkline = ""
     for val in sampled:
         normalized = (val - min_val) / diff
         index = int(normalized * (len(levels) - 1))
         sparkline += levels[index]
-        
+
     return sparkline
+
 
 class CoinList(Static):
     def compose(self) -> ComposeResult:
@@ -81,6 +219,7 @@ class CoinList(Static):
         table = self.query_one(DataTable)
         table.cursor_type = "row"
         table.add_columns("Rank", "Symbol", "Price", "24h %")
+
 
 class CoinDetail(Static):
     coin_data = reactive(None)
@@ -97,19 +236,17 @@ class CoinDetail(Static):
     def watch_coin_data(self, data: dict) -> None:
         if not data:
             return
-        
+
         name = f"{data.get('name')} ({data.get('symbol').upper()})"
         price = f"${data.get('market_data', {}).get('current_price', {}).get('usd', 0):,.2f}"
-        
-        # Stats formatting
+
         high_24h = data.get('market_data', {}).get('high_24h', {}).get('usd', 0)
         low_24h = data.get('market_data', {}).get('low_24h', {}).get('usd', 0)
         market_cap = data.get('market_data', {}).get('market_cap', {}).get('usd', 0)
-        
-        # Sparkline logic
+
         prices_7d = data.get('market_data', {}).get('sparkline_7d', {}).get('price', [])
         sparkline_art = generate_sparkline(prices_7d, width=50)
-        
+
         stats_text = (
             f"High 24h: ${high_24h:,.2f}\n"
             f"Low 24h:  ${low_24h:,.2f}\n"
@@ -121,6 +258,7 @@ class CoinDetail(Static):
         self.query_one("#sparkline-label", Label).update(f"[7 Day Trend]\n{sparkline_art}")
         self.query_one("#coin-stats", Label).update(stats_text)
 
+
 class NewsPanel(Static):
     news_data = reactive([])
 
@@ -130,8 +268,8 @@ class NewsPanel(Static):
 
     def watch_news_data(self, news_items: list) -> None:
         news_list_container = self.query_one("#news-list", Container)
-        news_list_container.clear()
-        
+        news_list_container.remove_children()
+
         for item in news_items:
             sentiment_emoji = ""
             if item['sentiment'] == "Bullish":
@@ -140,158 +278,164 @@ class NewsPanel(Static):
                 sentiment_emoji = "🔴 "
             else:
                 sentiment_emoji = "⚪ "
-            
-            asset_tags = "".join([f"[#00ffff][{asset}][/]" for asset in item['assets']])
-            
+
+            # Escape content to prevent Rich markup errors
+            safe_assets = [escape(asset) for asset in item['assets']]
+            asset_tags = " ".join([f"[$accent][{asset}][/]" for asset in safe_assets])
+            safe_title = escape(item['title'])
+            safe_source = escape(item['source'])
+
+            # Simple styled display
             news_list_container.mount(
-                Label(f"{sentiment_emoji}{asset_tags} [link={item['link']}]{item['title']}[/link] ([#00ff00]{item['source']}[/#00ff00])",
-                      classes="news-item")
+                Label(f"{sentiment_emoji}{asset_tags} [bold]{safe_title}[/] [dim]({safe_source})[/]",
+                      classes="news-item", markup=True)
             )
 
+
 class TerminalCoinApp(App):
+    """TerminalCoin - A terminal-based cryptocurrency tracker."""
+
     CSS = """
     Screen {
         layout: grid;
-        grid-size: 2 1; /* Two columns, one row for the overall screen */
+        grid-size: 2 1;
         grid-columns: 1fr 2fr;
-        background: #0e1019;
     }
-    
-    #app-grid { /* Container for the right side, splitting it vertically */
-        display: grid;
-        grid-rows: 2fr 1fr; /* Top for CoinDetail, Bottom for NewsPanel */
-        background: #0e1019;
+
+    #app-grid {
+        layout: grid;
+        grid-rows: 2fr 1fr;
     }
 
     /* --- Sidebar (Coin List) --- */
     CoinList {
         height: 100%;
-        border: solid #00ff00;
-        background: #0e1019;
+        border: solid $primary;
         margin-right: 1;
     }
-    
+
     .list-header {
         text-align: center;
-        background: #00ff00;
-        color: #000000;
+        background: $primary;
+        color: $background;
         text-style: bold;
         padding: 1;
         width: 100%;
-        border-bottom: solid #00ff00;
     }
 
     DataTable {
         height: 100%;
-        background: #0e1019;
         scrollbar-gutter: stable;
     }
-    
+
     DataTable > .datatable--header {
         text-style: bold;
-        color: #00ffff;
-        background: #0e1019;
-        border-bottom: solid #00ff00;
+        color: $secondary;
     }
 
     DataTable > .datatable--cursor {
-        background: #00ff00;
-        color: #000000;
+        background: $primary;
+        color: $background;
         text-style: bold;
     }
 
     /* --- Main Content (Detail) --- */
     CoinDetail {
         height: 100%;
-        border: solid #00ffff;
-        background: #0e1019;
+        border: solid $secondary;
         padding: 2;
         align: center middle;
     }
 
     #detail-container {
         height: auto;
-        border: heavy #00ffff;
-        background: #0a0c10;
+        border: heavy $secondary;
+        background: $surface;
         padding: 2;
     }
 
     #coin-name {
         text-align: center;
         text-style: bold;
-        color: #00ffff;
+        color: $secondary;
         margin-bottom: 1;
-        text-opacity: 100%;
-        border-bottom: solid #00ffff;
+        border-bottom: solid $secondary;
     }
 
     #coin-price {
         text-align: center;
         text-style: bold;
-        color: #00ff00;
+        color: $primary;
         margin-top: 1;
         margin-bottom: 2;
         padding: 1;
-        border: dashed #00ff00;
-        background: #0e1019;
+        border: dashed $primary;
     }
-    
+
     #coin-stats {
         text-align: left;
-        color: #d0d0d0;
         padding: 1;
     }
 
     #sparkline-label {
-        color: #00ff00;
+        color: $success;
         text-align: center;
         margin-bottom: 1;
-        text-opacity: 90%;
     }
 
     /* --- News Panel --- */
     NewsPanel {
         height: 100%;
-        border: solid #9945FF; /* Purple border */
-        background: #0e1019;
+        border: solid $accent;
         margin-top: 1;
     }
 
     .news-header {
         text-align: center;
-        background: #9945FF;
-        color: white;
+        background: $accent;
+        color: $background;
         text-style: bold;
         padding: 1;
         width: 100%;
-        border-bottom: solid #9945FF;
     }
 
     #news-list {
         height: 100%;
-        overflow: auto; /* Enable scrolling for news */
+        overflow: auto;
         padding: 1;
     }
 
     .news-item {
         margin-bottom: 1;
-        text-overflow: ellipsis; /* Truncate long news titles */
     }
     """
 
-    BINDINGS = [("q", "quit", "Quit"), ("r", "refresh", "Refresh")]
+    BINDINGS = [
+        ("q", "quit", "Quit"),
+        ("r", "refresh", "Refresh"),
+    ]
+
+    def __init__(self):
+        super().__init__()
+        # Register all custom themes
+        for theme in CUSTOM_THEMES.values():
+            self.register_theme(theme)
 
     def compose(self) -> ComposeResult:
         yield Header(show_clock=True)
         yield CoinList()
-        with Container(id="app-grid"): # Use a container to hold CoinDetail and NewsPanel vertically
+        with Container(id="app-grid"):
             yield CoinDetail()
             yield NewsPanel()
         yield Footer()
 
     def on_mount(self) -> None:
+        """Called when app is mounted."""
+        # Set default theme to matrix
+        self.theme = "matrix"
         self.load_data()
-        self.set_interval(60, self.load_data) # Refresh all data every 60 seconds
+        self.set_interval(60, self.load_data)
+        self.notify("Press Ctrl+P and type 'theme' to change colors", timeout=3)
 
     def load_data(self) -> None:
         self.load_coins()
@@ -300,21 +444,19 @@ class TerminalCoinApp(App):
     def load_coins(self) -> None:
         client = CoinGeckoClient()
         coins = client.get_top_coins()
-        
+
         table = self.query_one(DataTable)
         table.clear()
-        
+
         for coin in coins:
             price = f"${coin['current_price']:,.2f}"
             change = f"{coin['price_change_percentage_24h']:.2f}%"
-            # Note: Textual DataTable doesn't support rich tags directly in cells in simple mode easily without Rich objects, 
-            # keeping it simple text for now.
             table.add_row(
                 str(coin['market_cap_rank']),
                 coin['symbol'].upper(),
                 price,
                 change,
-                key=coin['id'] # Store coin ID as row key
+                key=coin['id']
             )
 
     def load_news(self) -> None:
@@ -332,6 +474,7 @@ class TerminalCoinApp(App):
         data = client.get_coin_details(coin_id)
         if data:
             self.query_one(CoinDetail).coin_data = data
+
 
 if __name__ == "__main__":
     app = TerminalCoinApp()
