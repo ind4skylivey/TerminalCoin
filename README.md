@@ -116,7 +116,7 @@ If this tool helped you snipe a gem, consider feeding the developer's caffeine a
 
 *   **BTC:** `bc1qg4he7nyq4j5r8mzq23e8shqvtvuymtmq5fur5k`
 *   **ETH:** `0x21C8864A17324e907A7DCB8d70cD2C5030c5b765`
-*   **SOL:** `BS3Nze14rdkPQQ8UkQZP4SU8uSc6de3UaVmv8gqh52eR`
+*   **SOL:** `BS3Nze14rdkPQQ8UkQZP4SU8uSc6de3UaVmv8gqh52e4`
 
 ---
 
