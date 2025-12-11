@@ -26,6 +26,7 @@ def generate_qr(data, filename, color):
 btc_addr = "bc1qg4he7nyq4j5r8mzq23e8shqvtvuymtmq5fur5k"
 eth_addr = "0x21C8864A17324e907A7DCB8d70cD2C5030c5b765"
 sol_addr = "BS3Nze14rdkPQQ8UkQZP4SU8uSc6de3UaVmv8gqh52e4"
+xmr_addr = "86dXPCXFbXnZ5SWPk8ajAC4ZWgNrVBFNDPiS2Evo5v3b8Sdzk6ciDfx4kCgVmYcQADDHkbBb5bWpFRA6VhMbEopB4kCRFJs"
 
 # Generate
 # BTC: Orange
@@ -34,5 +35,7 @@ generate_qr(btc_addr, "assets/btc-qr.png", "#f7931a")
 generate_qr(eth_addr, "assets/eth-qr.png", "#627eea")
 # SOL: Green/Purple Gradient (Using solid purple for simplicity/readability)
 generate_qr(sol_addr, "assets/sol-qr.png", "#14F195") # Solana Green
+# XMR: Orange (Monero)
+generate_qr(xmr_addr, "assets/xmr-qr.png", "#ff6600")
 
 print("All QR codes generated.")
