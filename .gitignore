@@ -49,3 +49,4 @@ ENV/
 # OS
 .DS_Store
 Thumbs.db
+DEBUG_REPORT.md
