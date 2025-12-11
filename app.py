@@ -1,9 +1,11 @@
 import requests
 from textual.app import App, ComposeResult
-from textual.containers import Container, Horizontal, Vertical
-from textual.widgets import Header, Footer, Static, DataTable, Label, Button
+from textual.containers import Container, Vertical
+from textual.widgets import Header, Footer, Static, DataTable, Label
 from textual.reactive import reactive
 from textual.message import Message
+
+from news_client import NewsClient # Import the new NewsClient
 
 class CoinGeckoClient:
     BASE_URL = "https://api.coingecko.com/api/v3"
@@ -97,15 +99,15 @@ class CoinDetail(Static):
             return
         
         name = f"{data.get('name')} ({data.get('symbol').upper()})"
-        price = f"${data.get('market_data', {{}}).get('current_price', {{}}).get('usd', 0):,.2f}"
+        price = f"${data.get('market_data', {}).get('current_price', {}).get('usd', 0):,.2f}"
         
         # Stats formatting
-        high_24h = data.get('market_data', {{}}).get('high_24h', {{}}).get('usd', 0)
-        low_24h = data.get('market_data', {{}}).get('low_24h', {{}}).get('usd', 0)
-        market_cap = data.get('market_data', {{}}).get('market_cap', {{}}).get('usd', 0)
+        high_24h = data.get('market_data', {}).get('high_24h', {}).get('usd', 0)
+        low_24h = data.get('market_data', {}).get('low_24h', {}).get('usd', 0)
+        market_cap = data.get('market_data', {}).get('market_cap', {}).get('usd', 0)
         
         # Sparkline logic
-        prices_7d = data.get('market_data', {{}}).get('sparkline_7d', {{}}).get('price', [])
+        prices_7d = data.get('market_data', {}).get('sparkline_7d', {}).get('price', [])
         sparkline_art = generate_sparkline(prices_7d, width=50)
         
         stats_text = (
@@ -119,20 +121,43 @@ class CoinDetail(Static):
         self.query_one("#sparkline-label", Label).update(f"[7 Day Trend]\n{sparkline_art}")
         self.query_one("#coin-stats", Label).update(stats_text)
 
+class NewsPanel(Static):
+    news_data = reactive([])
+
+    def compose(self) -> ComposeResult:
+        yield Label("Latest Crypto News", classes="news-header")
+        yield Container(id="news-list")
+
+    def watch_news_data(self, news_items: list) -> None:
+        news_list_container = self.query_one("#news-list", Container)
+        news_list_container.clear()
+        
+        for item in news_items:
+            news_list_container.mount(
+                Label(f"[bold #00ffff]>>[/bold #00ffff] [link={item['link']}]{item['title']}[/link] ([#00ff00]{item['source']}[/#00ff00])",
+                      classes="news-item")
+            )
+
 class TerminalCoinApp(App):
     CSS = """
     Screen {
         layout: grid;
-        grid-size: 2 1;
-        grid-columns: 30% 70%;
-        background: #0f111a;
+        grid-size: 2 1; /* Two columns, one row for the overall screen */
+        grid-columns: 1fr 2fr;
+        background: #0e1019;
     }
     
+    #app-grid { /* Container for the right side, splitting it vertically */
+        display: grid;
+        grid-rows: 2fr 1fr; /* Top for CoinDetail, Bottom for NewsPanel */
+        background: #0e1019;
+    }
+
     /* --- Sidebar (Coin List) --- */
     CoinList {
         height: 100%;
         border: solid #00ff00;
-        background: #0f111a;
+        background: #0e1019;
         margin-right: 1;
     }
     
@@ -148,14 +173,14 @@ class TerminalCoinApp(App):
 
     DataTable {
         height: 100%;
-        background: #0f111a;
+        background: #0e1019;
         scrollbar-gutter: stable;
     }
     
     DataTable > .datatable--header {
         text-style: bold;
         color: #00ffff;
-        background: #0f111a;
+        background: #0e1019;
         border-bottom: solid #00ff00;
     }
 
@@ -169,7 +194,7 @@ class TerminalCoinApp(App):
     CoinDetail {
         height: 100%;
         border: solid #00ffff;
-        background: #0f111a;
+        background: #0e1019;
         padding: 2;
         align: center middle;
     }
@@ -198,7 +223,7 @@ class TerminalCoinApp(App):
         margin-bottom: 2;
         padding: 1;
         border: dashed #00ff00;
-        background: #0f111a;
+        background: #0e1019;
     }
     
     #coin-stats {
@@ -213,6 +238,35 @@ class TerminalCoinApp(App):
         margin-bottom: 1;
         text-opacity: 90%;
     }
+
+    /* --- News Panel --- */
+    NewsPanel {
+        height: 100%;
+        border: solid #9945FF; /* Purple border */
+        background: #0e1019;
+        margin-top: 1;
+    }
+
+    .news-header {
+        text-align: center;
+        background: #9945FF;
+        color: white;
+        text-style: bold;
+        padding: 1;
+        width: 100%;
+        border-bottom: solid #9945FF;
+    }
+
+    #news-list {
+        height: 100%;
+        overflow: auto; /* Enable scrolling for news */
+        padding: 1;
+    }
+
+    .news-item {
+        margin-bottom: 1;
+        text-overflow: ellipsis; /* Truncate long news titles */
+    }
     """
 
     BINDINGS = [("q", "quit", "Quit"), ("r", "refresh", "Refresh")]
@@ -220,12 +274,18 @@ class TerminalCoinApp(App):
     def compose(self) -> ComposeResult:
         yield Header(show_clock=True)
         yield CoinList()
-        yield CoinDetail()
+        with Container(id="app-grid"): # Use a container to hold CoinDetail and NewsPanel vertically
+            yield CoinDetail()
+            yield NewsPanel()
         yield Footer()
 
     def on_mount(self) -> None:
+        self.load_data()
+        self.set_interval(60, self.load_data) # Refresh all data every 60 seconds
+
+    def load_data(self) -> None:
         self.load_coins()
-        self.set_interval(60, self.load_coins)
+        self.load_news()
 
     def load_coins(self) -> None:
         client = CoinGeckoClient()
@@ -237,7 +297,6 @@ class TerminalCoinApp(App):
         for coin in coins:
             price = f"${coin['current_price']:,.2f}"
             change = f"{coin['price_change_percentage_24h']:.2f}%"
-            # Color change
             # Note: Textual DataTable doesn't support rich tags directly in cells in simple mode easily without Rich objects, 
             # keeping it simple text for now.
             table.add_row(
@@ -247,6 +306,11 @@ class TerminalCoinApp(App):
                 change,
                 key=coin['id'] # Store coin ID as row key
             )
+
+    def load_news(self) -> None:
+        client = NewsClient()
+        news_items = client.fetch_news(limit=5)
+        self.query_one(NewsPanel).news_data = news_items
 
     def on_data_table_row_selected(self, event: DataTable.RowSelected) -> None:
         coin_id = event.row_key.value
