@@ -4,10 +4,12 @@
 
 ### The Crypto Terminal Dashboard for the Sovereign Developer
 
+[![Bitcoin Price](https://img.shields.io/badge/dynamic/json?color=orange&label=BTC&query=%24.bitcoin.usd&url=https%3A%2F%2Fapi.coingecko.com%2Fapi%2Fv3%2Fsimple%2Fprice%3Fids%3Dbitcoin%26vs_currencies%3Dusd&style=for-the-badge&logo=bitcoin)](https://coingecko.com)
+[![Ethereum Price](https://img.shields.io/badge/dynamic/json?color=blue&label=ETH&query=%24.ethereum.usd&url=https%3A%2F%2Fapi.coingecko.com%2Fapi%2Fv3%2Fsimple%2Fprice%3Fids%3Dethereum%26vs_currencies%3Dusd&style=for-the-badge&logo=ethereum)](https://coingecko.com)
+
 [![Python](https://img.shields.io/badge/Python-3.8+-ffe100?style=for-the-badge&logo=python&logoColor=black)](https://python.org)
 [![Textual](https://img.shields.io/badge/TUI-Textual-00ff00?style=for-the-badge&logo=terminal&logoColor=black)](https://textual.textualize.io/)
 [![License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)](LICENSE)
-[![Status](https://img.shields.io/badge/Status-Beta-orange?style=for-the-badge)]()
 
 </div>
 
@@ -28,6 +30,28 @@
 *   **🎨 Cyberpunk UI:** A carefully crafted neon-on-black aesthetic (Green/Cyan) designed for late-night coding sessions.
 *   **⚡ Zero Latency UX:** Keyboard-driven navigation. No mouse required (but supported).
 *   **🐧 Linux Native:** Built for the ecosystem. Pipes, virtual environments, and raw speed.
+
+## 🔗 Supported Assets
+
+We track the entire market, but we optimize for the kings:
+
+```text
+      ..                  
+     .:::.        BITCOIN  
+    .:::::.       [BTC]    
+  ..:::::::..     The Standard.
+    ':::::'       
+      ':'                  
+```
+```text
+      /\          ETHEREUM
+     /  \         [ETH]
+    /    \        The Computer.
+   /______\       
+     \    /       
+      \  /        
+       \/         
+```
 
 ## 📸 Preview
 
@@ -93,6 +117,14 @@ python app.py
 
 Contributions are welcome. Fork the repo, create a branch, and push your code.
 **Style Guide:** Keep it dark, keep it fast.
+
+## 💸 Sovereignty Fund
+
+If this tool helped you snipe a gem, consider feeding the developer's caffeine addiction.
+
+*   **BTC:** `bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh` (Example)
+*   **ETH:** `0x71C7656EC7ab88b098defB751B7401B5f6d8976F` (Example)
+*   **SOL:** `GwKB7x9g8...`
 
 ---
 
