@@ -33,6 +33,8 @@
 
 - **🚀 Real-Time Ticker:** Live price feeds for the top 100 cryptocurrencies via CoinGecko API
 - **📉 ASCII Sparklines:** Visualize 7-day price trends directly in your terminal using character-based micro-charts
+- **👛 Portfolio Manager:** Track your holdings, average buy price, and P&L in real-time
+- **🔍 Smart Search:** Instantly filter coins and sort by Top Gainers/Losers
 - **📰 Crypto News Feed:** Real-time news with sentiment analysis (Bullish/Bearish/Neutral)
 - **🎨 Multiple Themes:** 6 beautiful themes (Matrix, Cyberpunk, Ocean Deep, Solar Flare, Midnight Purple, Monochrome)
 - **⚡ Zero Latency UX:** Keyboard-driven navigation. No mouse required (but supported)
@@ -116,16 +118,38 @@ python app.py
 
 - **[ARCHITECTURE.md](ARCHITECTURE.md)** - Code architecture and design patterns
 - **[SECURITY.md](SECURITY.md)** - Security policy and best practices
-- \*\*[REFACTORING.md
+- **[REFACTORING.md](REFACTORING.md)** - Refactoring guide and technical debt
 
 ## 🗺️ Roadmap
 
+### Phase 1: Foundation (Completed)
+
 - [x] MVP Release (Live Prices)
-- [x] Sparkline Charts
-- [x] 📰 **Crypto News Feed** (RSS Integration)
+- [x] 📰 **Crypto News Feed** (Sentiment Analysis)
 - [x] 🎨 **Themes** (Matrix, Cyberpunk, Ocean, etc.)
-- [ ] 👛 **Portfolio Tracker** (Local storage)
+- [x] ⚡ **Async Core** (Non-blocking UI)
+
+### Phase 2: Alpha (Current)
+
+- [x] � **Sparkline Charts** (7-day trend)
+- [x] 🔍 **Search & Filters** (Gainers/Losers)
+- [x] �👛 **Portfolio Manager** (Local Database & P&L)
+- [ ] 📊 **Advanced Analytics** (RSI, MACD indicators)
 - [ ] 🔔 **Price Alerts** (Desktop notifications)
+
+### Phase 3: Beta (Upcoming)
+
+- [ ] 🔄 **Exchange Integration** (Read-only API keys)
+- [ ] 📱 **Mobile Support** (via SSH)
+- [ ] 📤 **Data Export** (CSV/JSON)
+
+## 🔧 Troubleshooting
+
+**Icons not showing?**
+Make sure you are using a [Nerd Font](https://www.nerdfonts.com/) (e.g., JetBrains Mono Nerd Font) in your terminal emulator.
+
+**Colors look washed out?**
+Ensure your terminal supports **TrueColor** (24-bit color).
 
 ## 🤝 Contributing
 
