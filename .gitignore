@@ -1,17 +1,3 @@
-# Sensitive / Config
-.env
-.env.local
-config.json
-secrets.json
-*.key
-*.pem
-
-# Logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
 # Python
 __pycache__/
 *.py[cod]
@@ -33,26 +19,51 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
-MANIFEST
 
 # Virtual Environment
 venv/
-env/
 ENV/
-.env
+env/
+.venv
 
-# IDEs
+# IDE
 .vscode/
 .idea/
 *.swp
+*.swo
+*~
+.DS_Store
+
+# Logs
+*.log
+logs/
+terminalcoin.log
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.hypothesis/
+
+# MyPy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Ruff
+.ruff_cache/
+
+# Environment variables
+.env
+.env.local
 
 # OS
-.DS_Store
 Thumbs.db
-DEBUG_REPORT.md
+.DS_Store
 
-# Recording scripts and files
-record_demo.sh
-*.cast
-*.gif
-!assets/terminalcoin_demo.gif
+# Project specific
+*.db
+*.sqlite
+cache/
+temp/
