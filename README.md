@@ -25,11 +25,23 @@
 
 ## 💎 Features
 
-- **🚀 Real-Time Ticker:** Live price feeds for the top 100 cryptocurrencies via CoinGecko.
-- **📉 ASCII Sparklines:** Visualize 7-day price trends directly in your terminal using character-based micro-charts.
-- **🎨 Cyberpunk UI:** A carefully crafted neon-on-black aesthetic (Green/Cyan) designed for late-night coding sessions.
-- **⚡ Zero Latency UX:** Keyboard-driven navigation. No mouse required (but supported).
-- **🐧 Linux Native:** Built for the ecosystem. Pipes, virtual environments, and raw speed.
+### Core Features
+
+- **🚀 Real-Time Ticker:** Live price feeds for the top 100 cryptocurrencies via CoinGecko API
+- **📉 ASCII Sparklines:** Visualize 7-day price trends directly in your terminal using character-based micro-charts
+- **📰 Crypto News Feed:** Real-time news with sentiment analysis (Bullish/Bearish/Neutral)
+- **🎨 Multiple Themes:** 6 beautiful themes (Matrix, Cyberpunk, Ocean Deep, Solar Flare, Midnight Purple, Monochrome)
+- **⚡ Zero Latency UX:** Keyboard-driven navigation. No mouse required (but supported)
+- **🐧 Linux Native:** Built for the ecosystem. Pipes, virtual environments, and raw speed
+
+### Version 2.0 - Clean Code & Security 🔒
+
+- **✅ Clean Architecture:** Modular design with separation of concerns
+- **✅ Type Safety:** Full type hints and Pydantic validation
+- **✅ Security First:** Input validation, output sanitization, rate limiting
+- **✅ Error Handling:** Comprehensive exception handling and logging
+- **✅ Testing:** Unit tests and test infrastructure
+- **✅ Documentation:** Extensive docs (ARCHITECTURE.md, SECURITY.md, REFACTORING.md)
 
 ## 🔗 Supported Assets
 
@@ -82,12 +94,25 @@ python app.py
 
 ### Controls
 
-| Key     | Action                        |
-| :------ | :---------------------------- |
-| `q`     | **Quit** the application      |
-| `r`     | **Refresh** data immediately  |
-| `Click` | Select a coin to view details |
-| `↑/↓`   | Navigate the coin list        |
+| Key      | Action                             |
+| :------- | :--------------------------------- |
+| `q`      | **Quit** the application           |
+| `r`      | **Refresh** data immediately       |
+| `Ctrl+P` | **Command palette** (change theme) |
+| `Click`  | Select a coin to view details      |
+| `↑/↓`    | Navigate the coin list             |
+
+### Changing Themes
+
+1. Press `Ctrl+P` to open the command palette
+2. Type "theme" and select "Change theme"
+3. Choose from: Matrix, Cyberpunk, Ocean Deep, Solar Flare, Midnight Purple, or Monochrome
+
+## 📚 Documentation
+
+- **[ARCHITECTURE.md](ARCHITECTURE.md)** - Code architecture and design patterns
+- **[SECURITY.md](SECURITY.md)** - Security policy and best practices
+- **[REFACTORING.md](REFACTORING.md)** - Version 2.0 refactoring details
 
 ## 🗺️ Roadmap
 

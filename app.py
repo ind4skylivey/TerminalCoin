@@ -1,33 +1,49 @@
-import requests
+"""
+TerminalCoin - A terminal-based cryptocurrency tracker.
+
+A beautiful, secure, and robust TUI application for tracking cryptocurrency
+prices and news with multiple theme support.
+
+Author: il1v3y
+Version: 2.0.0
+"""
+
+from typing import Optional
 from textual.app import App, ComposeResult
-from textual.containers import Container, Vertical
+from textual.containers import Container
 from textual.widgets import Header, Footer, Static, DataTable, Label
 from textual.reactive import reactive
-from textual.message import Message
 from textual.theme import Theme
 from rich.markup import escape
 
-from news_client import NewsClient
+from api_client import CoinGeckoClient
+from news_client import get_news_client
+from models import CoinMarketData, CoinDetailData, NewsItem, SentimentType
+from config import app_config
+from logger import get_logger
+from utils import generate_sparkline, format_currency, format_percentage
+from exceptions import TerminalCoinException
+
+logger = get_logger(__name__)
+
 
 # =============================================================================
 # CUSTOM THEMES - Using Textual's Native Theme System
 # =============================================================================
-# These themes appear in the command palette (Ctrl+P -> search "theme")
-# Colors are optimized for readability with good contrast
 
 CUSTOM_THEMES = {
     "matrix": Theme(
         name="matrix",
-        primary="#00ff00",          # Bright green (classic hacker)
-        secondary="#00cc88",        # Softer green for secondary
-        accent="#00ffff",           # Cyan accent
-        warning="#ffcc00",          # Yellow warning
-        error="#ff4444",            # Red error
-        success="#00ff00",          # Green success
-        foreground="#e8e8e8",       # Light gray for readability
-        background="#0a0f0a",       # Very dark green-tinted black
-        surface="#0f1a0f",          # Slightly lighter surface
-        panel="#152015",            # Panel background
+        primary="#00ff00",
+        secondary="#00cc88",
+        accent="#00ffff",
+        warning="#ffcc00",
+        error="#ff4444",
+        success="#00ff00",
+        foreground="#e8e8e8",
+        background="#0a0f0a",
+        surface="#0f1a0f",
+        panel="#152015",
         dark=True,
         variables={
             "block-cursor-background": "#00ff00",
@@ -39,16 +55,16 @@ CUSTOM_THEMES = {
     ),
     "cyberpunk": Theme(
         name="cyberpunk",
-        primary="#ff00aa",          # Hot pink
-        secondary="#00ddff",        # Electric cyan
-        accent="#ffee00",           # Neon yellow
-        warning="#ff9900",          # Orange
-        error="#ff3366",            # Pink-red
-        success="#00ff88",          # Neon green
-        foreground="#f0f0f0",       # Bright white for contrast
-        background="#0a0015",       # Deep purple-black
-        surface="#150025",          # Purple tinted
-        panel="#200035",            # Lighter purple
+        primary="#ff00aa",
+        secondary="#00ddff",
+        accent="#ffee00",
+        warning="#ff9900",
+        error="#ff3366",
+        success="#00ff88",
+        foreground="#f0f0f0",
+        background="#0a0015",
+        surface="#150025",
+        panel="#200035",
         dark=True,
         variables={
             "block-cursor-background": "#00ddff",
@@ -60,16 +76,16 @@ CUSTOM_THEMES = {
     ),
     "ocean-deep": Theme(
         name="ocean-deep",
-        primary="#00aaff",          # Ocean blue
-        secondary="#00ddaa",        # Sea green
-        accent="#ff8855",           # Coral/sunset
-        warning="#ffbb33",          # Sandy yellow
-        error="#ff5566",            # Coral red
-        success="#00dd88",          # Sea foam
-        foreground="#e0eef8",       # Light blue-white
-        background="#050a12",       # Deep ocean black
-        surface="#0a1520",          # Dark blue
-        panel="#102030",            # Ocean depth
+        primary="#00aaff",
+        secondary="#00ddaa",
+        accent="#ff8855",
+        warning="#ffbb33",
+        error="#ff5566",
+        success="#00dd88",
+        foreground="#e0eef8",
+        background="#050a12",
+        surface="#0a1520",
+        panel="#102030",
         dark=True,
         variables={
             "block-cursor-background": "#00ddaa",
@@ -81,16 +97,16 @@ CUSTOM_THEMES = {
     ),
     "solar-flare": Theme(
         name="solar-flare",
-        primary="#ffaa00",          # Golden sun
-        secondary="#ff7700",        # Warm orange
-        accent="#ffdd00",           # Bright yellow
-        warning="#ff9900",          # Orange
-        error="#ff4433",            # Fire red
-        success="#aadd00",          # Lime
-        foreground="#fff5e0",       # Warm white
-        background="#0f0a05",       # Warm black
-        surface="#1a1008",          # Dark brown
-        panel="#251810",            # Ember
+        primary="#ffaa00",
+        secondary="#ff7700",
+        accent="#ffdd00",
+        warning="#ff9900",
+        error="#ff4433",
+        success="#aadd00",
+        foreground="#fff5e0",
+        background="#0f0a05",
+        surface="#1a1008",
+        panel="#251810",
         dark=True,
         variables={
             "block-cursor-background": "#ff7700",
@@ -102,16 +118,16 @@ CUSTOM_THEMES = {
     ),
     "midnight-purple": Theme(
         name="midnight-purple",
-        primary="#aa77ff",          # Soft purple
-        secondary="#ff77aa",        # Soft pink
-        accent="#77ddff",           # Sky blue
-        warning="#ffaa55",          # Peach
-        error="#ff6677",            # Soft red
-        success="#77dd99",          # Soft green
-        foreground="#eee8f5",       # Lavender white
-        background="#0a0510",       # Deep purple-black
-        surface="#120818",          # Dark purple
-        panel="#1a1020",            # Lighter purple
+        primary="#aa77ff",
+        secondary="#ff77aa",
+        accent="#77ddff",
+        warning="#ffaa55",
+        error="#ff6677",
+        success="#77dd99",
+        foreground="#eee8f5",
+        background="#0a0510",
+        surface="#120818",
+        panel="#1a1020",
         dark=True,
         variables={
             "block-cursor-background": "#ff77aa",
@@ -123,16 +139,16 @@ CUSTOM_THEMES = {
     ),
     "monochrome": Theme(
         name="monochrome",
-        primary="#ffffff",          # Pure white
-        secondary="#bbbbbb",        # Light gray
-        accent="#888888",           # Medium gray
-        warning="#cccccc",          # Light gray
-        error="#999999",            # Gray
-        success="#dddddd",          # Almost white
-        foreground="#e0e0e0",       # Light gray text
-        background="#080808",       # Near black
-        surface="#121212",          # Dark gray
-        panel="#1a1a1a",            # Slightly lighter
+        primary="#ffffff",
+        secondary="#bbbbbb",
+        accent="#888888",
+        warning="#cccccc",
+        error="#999999",
+        success="#dddddd",
+        foreground="#e0e0e0",
+        background="#080808",
+        surface="#121212",
+        panel="#1a1a1a",
         dark=True,
         variables={
             "block-cursor-background": "#ffffff",
@@ -145,86 +161,33 @@ CUSTOM_THEMES = {
 }
 
 
-class CoinGeckoClient:
-    BASE_URL = "https://api.coingecko.com/api/v3"
-
-    def get_top_coins(self, limit=50):
-        try:
-            url = f"{self.BASE_URL}/coins/markets"
-            params = {
-                "vs_currency": "usd",
-                "order": "market_cap_desc",
-                "per_page": limit,
-                "page": 1,
-                "sparkline": "false"
-            }
-            response = requests.get(url, params=params, timeout=10)
-            response.raise_for_status()
-            return response.json()
-        except Exception:
-            return []
-
-    def get_coin_details(self, coin_id):
-        try:
-            url = f"{self.BASE_URL}/coins/{coin_id}"
-            params = {
-                "localization": "false",
-                "tickers": "false",
-                "market_data": "true",
-                "community_data": "false",
-                "developer_data": "false",
-                "sparkline": "true"
-            }
-            response = requests.get(url, params=params, timeout=10)
-            response.raise_for_status()
-            return response.json()
-        except Exception:
-            return None
-
-
-def generate_sparkline(data, width=40):
-    if not data:
-        return ""
-
-    step = max(1, len(data) // width)
-    sampled = data[::step][:width]
-
-    if not sampled:
-        return ""
-
-    min_val = min(sampled)
-    max_val = max(sampled)
-    diff = max_val - min_val
-
-    levels = "  ▂▃▄▅▆▇█"
-
-    if diff == 0:
-        return levels[4] * len(sampled)
-
-    sparkline = ""
-    for val in sampled:
-        normalized = (val - min_val) / diff
-        index = int(normalized * (len(levels) - 1))
-        sparkline += levels[index]
-
-    return sparkline
-
+# =============================================================================
+# UI COMPONENTS
+# =============================================================================
 
 class CoinList(Static):
+    """Widget displaying list of top cryptocurrencies."""
+
     def compose(self) -> ComposeResult:
+        """Compose the coin list widget."""
         yield Label("Market Cap Top 50", classes="list-header")
         yield DataTable()
 
     def on_mount(self) -> None:
+        """Configure the data table on mount."""
         table = self.query_one(DataTable)
         table.cursor_type = "row"
         table.add_columns("Rank", "Symbol", "Price", "24h %")
+        logger.debug("CoinList widget mounted")
 
 
 class CoinDetail(Static):
-    coin_data = reactive(None)
+    """Widget displaying detailed information for a selected coin."""
+
+    coin_data: reactive[Optional[CoinDetailData]] = reactive(None)
 
     def compose(self) -> ComposeResult:
+        """Compose the coin detail widget."""
         yield Container(
             Label("Select a coin to view details", id="coin-name"),
             Label("", id="coin-price"),
@@ -233,64 +196,105 @@ class CoinDetail(Static):
             id="detail-container"
         )
 
-    def watch_coin_data(self, data: dict) -> None:
+    def watch_coin_data(self, data: Optional[CoinDetailData]) -> None:
+        """
+        Update display when coin data changes.
+
+        Args:
+            data: CoinDetailData object or None
+        """
         if not data:
             return
 
-        name = f"{data.get('name')} ({data.get('symbol').upper()})"
-        price = f"${data.get('market_data', {}).get('current_price', {}).get('usd', 0):,.2f}"
+        try:
+            # Format coin name and symbol
+            name = f"{data.name} ({data.symbol.upper()})"
 
-        high_24h = data.get('market_data', {}).get('high_24h', {}).get('usd', 0)
-        low_24h = data.get('market_data', {}).get('low_24h', {}).get('usd', 0)
-        market_cap = data.get('market_data', {}).get('market_cap', {}).get('usd', 0)
+            # Format price
+            price = format_currency(data.current_price)
 
-        prices_7d = data.get('market_data', {}).get('sparkline_7d', {}).get('price', [])
-        sparkline_art = generate_sparkline(prices_7d, width=50)
+            # Get 24h high/low and market cap
+            high_24h = data.high_24h
+            low_24h = data.low_24h
+            market_cap = data.market_cap
 
-        stats_text = (
-            f"High 24h: ${high_24h:,.2f}\n"
-            f"Low 24h:  ${low_24h:,.2f}\n"
-            f"Mkt Cap:  ${market_cap:,.0f}"
-        )
+            # Generate sparkline
+            prices_7d = data.sparkline_7d
+            sparkline_art = generate_sparkline(prices_7d, width=50) if prices_7d else "No data"
 
-        self.query_one("#coin-name", Label).update(name)
-        self.query_one("#coin-price", Label).update(price)
-        self.query_one("#sparkline-label", Label).update(f"[7 Day Trend]\n{sparkline_art}")
-        self.query_one("#coin-stats", Label).update(stats_text)
+            # Format stats
+            stats_text = (
+                f"High 24h: {format_currency(high_24h)}\n"
+                f"Low 24h:  {format_currency(low_24h)}\n"
+                f"Mkt Cap:  {format_currency(market_cap, decimals=0)}"
+            )
+
+            # Update labels
+            self.query_one("#coin-name", Label).update(name)
+            self.query_one("#coin-price", Label).update(price)
+            self.query_one("#sparkline-label", Label).update(f"[7 Day Trend]\n{sparkline_art}")
+            self.query_one("#coin-stats", Label).update(stats_text)
+
+            logger.debug(f"Updated coin detail for {data.name}")
+
+        except Exception as e:
+            logger.error(f"Error updating coin detail: {e}")
+            self.notify("Error displaying coin details", severity="error")
 
 
 class NewsPanel(Static):
-    news_data = reactive([])
+    """Widget displaying cryptocurrency news feed."""
+
+    news_data: reactive[list] = reactive([])
 
     def compose(self) -> ComposeResult:
+        """Compose the news panel widget."""
         yield Label("Latest Crypto News", classes="news-header")
         yield Container(id="news-list")
 
     def watch_news_data(self, news_items: list) -> None:
+        """
+        Update display when news data changes.
+
+        Args:
+            news_items: List of NewsItem objects
+        """
         news_list_container = self.query_one("#news-list", Container)
         news_list_container.remove_children()
 
         for item in news_items:
-            sentiment_emoji = ""
-            if item['sentiment'] == "Bullish":
-                sentiment_emoji = "🟢 "
-            elif item['sentiment'] == "Bearish":
-                sentiment_emoji = "🔴 "
-            else:
-                sentiment_emoji = "⚪ "
+            try:
+                # Sentiment emoji
+                sentiment_emoji = {
+                    SentimentType.BULLISH: "🟢 ",
+                    SentimentType.BEARISH: "🔴 ",
+                    SentimentType.NEUTRAL: "⚪ "
+                }.get(item.sentiment, "⚪ ")
 
-            # Escape content to prevent Rich markup errors
-            safe_assets = [escape(asset) for asset in item['assets']]
-            asset_tags = " ".join([f"[$accent][{asset}][/]" for asset in safe_assets])
-            safe_title = escape(item['title'])
-            safe_source = escape(item['source'])
+                # Escape content to prevent Rich markup errors
+                safe_assets = [escape(asset) for asset in item.assets]
+                asset_tags = " ".join([f"[$accent][{asset}][/]" for asset in safe_assets])
+                safe_title = escape(item.title)
+                safe_source = escape(item.source)
 
-            # Simple styled display
-            news_list_container.mount(
-                Label(f"{sentiment_emoji}{asset_tags} [bold]{safe_title}[/] [dim]({safe_source})[/]",
-                      classes="news-item", markup=True)
-            )
+                # Create news item label
+                news_list_container.mount(
+                    Label(
+                        f"{sentiment_emoji}{asset_tags} [bold]{safe_title}[/] [dim]({safe_source})[/]",
+                        classes="news-item",
+                        markup=True
+                    )
+                )
+            except Exception as e:
+                logger.error(f"Error displaying news item: {e}")
+                continue
 
+        logger.debug(f"Updated news panel with {len(news_items)} items")
+
+
+# =============================================================================
+# MAIN APPLICATION
+# =============================================================================
 
 class TerminalCoinApp(App):
     """TerminalCoin - A terminal-based cryptocurrency tracker."""
@@ -416,12 +420,21 @@ class TerminalCoinApp(App):
     ]
 
     def __init__(self):
+        """Initialize the application."""
         super().__init__()
+
         # Register all custom themes
         for theme in CUSTOM_THEMES.values():
             self.register_theme(theme)
 
+        # Initialize API clients
+        self.coin_client: Optional[CoinGeckoClient] = None
+        self.news_client = get_news_client()
+
+        logger.info(f"TerminalCoin v{app_config.VERSION} initialized")
+
     def compose(self) -> ComposeResult:
+        """Compose the application layout."""
         yield Header(show_clock=True)
         yield CoinList()
         with Container(id="app-grid"):
@@ -431,51 +444,146 @@ class TerminalCoinApp(App):
 
     def on_mount(self) -> None:
         """Called when app is mounted."""
-        # Set default theme to matrix
-        self.theme = "matrix"
-        self.load_data()
-        self.set_interval(60, self.load_data)
-        self.notify("Press Ctrl+P and type 'theme' to change colors", timeout=3)
+        try:
+            # Set default theme
+            self.theme = app_config.DEFAULT_THEME
 
-    def load_data(self) -> None:
-        self.load_coins()
-        self.load_news()
+            # Initialize coin client
+            self.coin_client = CoinGeckoClient()
 
-    def load_coins(self) -> None:
-        client = CoinGeckoClient()
-        coins = client.get_top_coins()
+            # Load initial data
+            self.load_data()
 
-        table = self.query_one(DataTable)
-        table.clear()
+            # Set up auto-refresh
+            self.set_interval(app_config.REFRESH_INTERVAL, self.load_data)
 
-        for coin in coins:
-            price = f"${coin['current_price']:,.2f}"
-            change = f"{coin['price_change_percentage_24h']:.2f}%"
-            table.add_row(
-                str(coin['market_cap_rank']),
-                coin['symbol'].upper(),
-                price,
-                change,
-                key=coin['id']
+            # Show welcome notification
+            self.notify(
+                "Press Ctrl+P and type 'theme' to change colors",
+                timeout=3
             )
 
+            logger.info("Application mounted successfully")
+
+        except Exception as e:
+            logger.error(f"Error during mount: {e}")
+            self.notify(f"Error initializing app: {e}", severity="error")
+
+    def load_data(self) -> None:
+        """Load coin and news data."""
+        try:
+            self.load_coins()
+            self.load_news()
+        except Exception as e:
+            logger.error(f"Error loading data: {e}")
+            self.notify("Error loading data", severity="error")
+
+    def load_coins(self) -> None:
+        """Load top cryptocurrencies."""
+        if not self.coin_client:
+            logger.warning("Coin client not initialized")
+            return
+
+        try:
+            coins = self.coin_client.get_top_coins(limit=50)
+
+            table = self.query_one(DataTable)
+            table.clear()
+
+            for coin in coins:
+                try:
+                    price = format_currency(coin.current_price)
+                    change = format_percentage(coin.price_change_percentage_24h or 0.0)
+
+                    table.add_row(
+                        str(coin.market_cap_rank or "N/A"),
+                        coin.symbol,
+                        price,
+                        change,
+                        key=coin.id
+                    )
+                except Exception as e:
+                    logger.warning(f"Error adding coin row: {e}")
+                    continue
+
+            logger.info(f"Loaded {len(coins)} coins")
+
+        except TerminalCoinException as e:
+            logger.error(f"Error loading coins: {e.message}")
+            self.notify(f"Error loading coins: {e.message}", severity="warning")
+        except Exception as e:
+            logger.error(f"Unexpected error loading coins: {e}")
+
     def load_news(self) -> None:
-        client = NewsClient()
-        news_items = client.fetch_news(limit=5)
-        self.query_one(NewsPanel).news_data = news_items
+        """Load cryptocurrency news."""
+        try:
+            news_items = self.news_client.fetch_news(limit=5)
+            self.query_one(NewsPanel).news_data = news_items
+            logger.info(f"Loaded {len(news_items)} news items")
+
+        except Exception as e:
+            logger.error(f"Error loading news: {e}")
+            # Don't notify user for news errors, fail silently
 
     def on_data_table_row_selected(self, event: DataTable.RowSelected) -> None:
+        """
+        Handle row selection in the coin list.
+
+        Args:
+            event: Row selection event
+        """
         coin_id = event.row_key.value
         if coin_id:
             self.fetch_and_show_details(coin_id)
 
-    def fetch_and_show_details(self, coin_id):
-        client = CoinGeckoClient()
-        data = client.get_coin_details(coin_id)
-        if data:
-            self.query_one(CoinDetail).coin_data = data
+    def fetch_and_show_details(self, coin_id: str) -> None:
+        """
+        Fetch and display detailed coin information.
+
+        Args:
+            coin_id: Coin identifier
+        """
+        if not self.coin_client:
+            logger.warning("Coin client not initialized")
+            return
+
+        try:
+            data = self.coin_client.get_coin_details(coin_id)
+            if data:
+                self.query_one(CoinDetail).coin_data = data
+            else:
+                self.notify(f"Could not load details for {coin_id}", severity="warning")
+
+        except TerminalCoinException as e:
+            logger.error(f"Error fetching coin details: {e.message}")
+            self.notify(f"Error: {e.message}", severity="error")
+        except Exception as e:
+            logger.error(f"Unexpected error fetching coin details: {e}")
+            self.notify("Error loading coin details", severity="error")
+
+    def action_refresh(self) -> None:
+        """Refresh all data."""
+        self.notify("Refreshing data...")
+        self.load_data()
+
+    def on_unmount(self) -> None:
+        """Clean up when app is unmounted."""
+        if self.coin_client:
+            self.coin_client.close()
+        logger.info("Application unmounted")
+
+
+def main() -> None:
+    """Main entry point for the application."""
+    try:
+        app = TerminalCoinApp()
+        app.run()
+    except KeyboardInterrupt:
+        logger.info("Application interrupted by user")
+    except Exception as e:
+        logger.critical(f"Fatal error: {e}", exc_info=True)
+        raise
 
 
 if __name__ == "__main__":
-    app = TerminalCoinApp()
-    app.run()
+    main()
