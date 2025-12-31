@@ -11,6 +11,10 @@
 [![Textual](https://img.shields.io/badge/TUI-Textual-00ff00?style=for-the-badge&logo=terminal&logoColor=black)](https://textual.textualize.io/)
 [![License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)](LICENSE)
 
+<br>
+
+> [!IMPORTANT] > **ALPHA PHASE NOTICE**: This project is currently in **Alpha**. Features may be unstable, APIs might change, and bugs are expected. Feedback and contributions are welcome!
+
 </div>
 
 ---
@@ -112,7 +116,7 @@ python app.py
 
 - **[ARCHITECTURE.md](ARCHITECTURE.md)** - Code architecture and design patterns
 - **[SECURITY.md](SECURITY.md)** - Security policy and best practices
-- **[REFACTORING.md
+- \*\*[REFACTORING.md
 
 ## 🗺️ Roadmap
 
