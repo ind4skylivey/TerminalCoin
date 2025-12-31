@@ -29,6 +29,14 @@ class CoinMarketData(BaseModel):
     market_cap_rank: Optional[int] = Field(None, ge=1, description="Market cap rank")
     market_cap: Optional[float] = Field(None, ge=0, description="Market capitalization")
     price_change_percentage_24h: Optional[float] = Field(None, description="24h price change %")
+    sparkline_in_7d: Optional[Dict[str, List[float]]] = Field(None, description="7d sparkline data")
+
+    @property
+    def sparkline_7d(self) -> List[float]:
+        """Extract 7-day sparkline prices."""
+        if self.sparkline_in_7d:
+            return self.sparkline_in_7d.get('price', [])
+        return []
 
     @field_validator('symbol')
     @classmethod

@@ -8,13 +8,15 @@ Author: il1v3y
 Version: 2.0.0
 """
 
+import asyncio
 from typing import Optional
 from textual.app import App, ComposeResult
-from textual.containers import Container
-from textual.widgets import Header, Footer, Static, DataTable, Label
+from textual.containers import Container, Horizontal, Vertical, VerticalScroll
+from textual.widgets import Header, Footer, Static, DataTable, Label, Button, Input, TabbedContent, TabPane
 from textual.reactive import reactive
 from textual.theme import Theme
 from rich.markup import escape
+from datetime import datetime
 
 from api_client import CoinGeckoClient
 from news_client import get_news_client
@@ -23,6 +25,9 @@ from config import app_config
 from logger import get_logger
 from utils import generate_sparkline, format_currency, format_percentage
 from exceptions import TerminalCoinException
+from widgets.chart import CryptoChart
+from widgets.portfolio import PortfolioTable
+from portfolio_manager import PortfolioManager
 
 logger = get_logger(__name__)
 
@@ -55,23 +60,23 @@ CUSTOM_THEMES = {
     ),
     "cyberpunk": Theme(
         name="cyberpunk",
-        primary="#ff00aa",
-        secondary="#00ddff",
-        accent="#ffee00",
-        warning="#ff9900",
-        error="#ff3366",
-        success="#00ff88",
-        foreground="#f0f0f0",
-        background="#0a0015",
-        surface="#150025",
-        panel="#200035",
+        primary="#00ff41",       # Matrix Green
+        secondary="#0099ff",     # Neon Blue
+        accent="#ff006e",        # Neon Pink
+        warning="#ffcc00",
+        error="#ff006e",
+        success="#00ff41",
+        foreground="#e0e0e0",
+        background="#050a15",    # Darker BG
+        surface="#0a0e27",       # Dark Blue Surface
+        panel="#0a0e27",
         dark=True,
         variables={
-            "block-cursor-background": "#00ddff",
-            "block-cursor-foreground": "#0a0015",
-            "footer-key-foreground": "#ff00aa",
-            "button-color-foreground": "#0a0015",
-            "border": "#aa0077",
+            "block-cursor-background": "#00ff41",
+            "block-cursor-foreground": "#050a15",
+            "footer-key-foreground": "#0099ff",
+            "button-color-foreground": "#050a15",
+            "border": "#1a2f5f",  # Dark Blue Border
         },
     ),
     "ocean-deep": Theme(
@@ -166,19 +171,123 @@ CUSTOM_THEMES = {
 # =============================================================================
 
 class CoinList(Static):
-    """Widget displaying list of top cryptocurrencies."""
+    """Widget displaying list of top cryptocurrencies with search and filters."""
+
+    coins: reactive[list[CoinMarketData]] = reactive([])
+    filtered_coins: reactive[list[CoinMarketData]] = reactive([])
+    current_sort: reactive[str] = reactive("market_cap")  # market_cap, gainers, losers
 
     def compose(self) -> ComposeResult:
         """Compose the coin list widget."""
-        yield Label("Market Cap Top 50", classes="list-header")
+        yield Container(
+            Input(placeholder="Search coins...", id="coin-search"),
+            Horizontal(
+                Button("Mkt Cap", id="sort-cap", variant="primary", classes="sort-btn"),
+                Button("Gainers", id="sort-gainers", variant="default", classes="sort-btn"),
+                Button("Losers", id="sort-losers", variant="default", classes="sort-btn"),
+                classes="filter-bar"
+            ),
+            id="list-controls"
+        )
+        yield Label("Market Cap Top 50", classes="list-header", id="list-title")
         yield DataTable()
 
     def on_mount(self) -> None:
         """Configure the data table on mount."""
         table = self.query_one(DataTable)
         table.cursor_type = "row"
-        table.add_columns("Rank", "Symbol", "Price", "24h %")
+        table.add_columns("Rank", "Symbol", "Price", "24h %", "Trend (7d)")
         logger.debug("CoinList widget mounted")
+
+    def watch_coins(self, coins: list[CoinMarketData]) -> None:
+        """Update filtered list when raw coins data changes."""
+        self._apply_filters()
+
+    def on_input_changed(self, event: Input.Changed) -> None:
+        """Handle search input changes."""
+        self._apply_filters()
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        """Handle sort button presses."""
+        if event.button.id == "sort-cap":
+            self.current_sort = "market_cap"
+            self.query_one("#list-title", Label).update("Market Cap Top 50")
+        elif event.button.id == "sort-gainers":
+            self.current_sort = "gainers"
+            self.query_one("#list-title", Label).update("Top Gainers (24h)")
+        elif event.button.id == "sort-losers":
+            self.current_sort = "losers"
+            self.query_one("#list-title", Label).update("Top Losers (24h)")
+
+        # Update button styles
+        for btn_id in ["sort-cap", "sort-gainers", "sort-losers"]:
+            btn = self.query_one(f"#{btn_id}", Button)
+            btn.variant = "primary" if btn_id == event.button.id else "default"
+
+        self._apply_filters()
+
+    def _apply_filters(self) -> None:
+        """Filter and sort coins based on input and selected category."""
+        search_term = self.query_one("#coin-search", Input).value.lower()
+
+        # 1. Filter by search term
+        result = [
+            c for c in self.coins
+            if search_term in c.name.lower() or search_term in c.symbol.lower()
+        ]
+
+        # 2. Sort
+        if self.current_sort == "gainers":
+            result.sort(key=lambda x: x.price_change_percentage_24h or -9999, reverse=True)
+        elif self.current_sort == "losers":
+            result.sort(key=lambda x: x.price_change_percentage_24h or 9999, reverse=False)
+        else: # market_cap (default)
+            result.sort(key=lambda x: x.market_cap_rank or 9999, reverse=False)
+
+        self.filtered_coins = result
+        self._update_table(result)
+
+    def _update_table(self, coins: list[CoinMarketData]) -> None:
+        """Update the DataTable with processed coins."""
+        table = self.query_one(DataTable)
+        table.clear()
+
+        for coin in coins:
+            try:
+                price = format_currency(coin.current_price)
+                change = format_percentage(coin.price_change_percentage_24h or 0.0)
+
+                # Generate Sparkline
+                sparkline = ""
+                if coin.sparkline_7d:
+                    sparkline = generate_sparkline(coin.sparkline_7d, width=15)
+
+                table.add_row(
+                    str(coin.market_cap_rank or "N/A"),
+                    coin.symbol,
+                    price,
+                    change,
+                    sparkline,
+                    key=coin.id
+                )
+            except Exception as e:
+                logger.warning(f"Error adding coin row: {e}")
+                continue
+        logger.info(f"Displayed {len(coins)} coins in CoinList")
+
+    async def fetch_coins(self, client: CoinGeckoClient) -> None:
+        """Fetch top cryptocurrencies and update the widget asynchronously."""
+        try:
+            # Fetch more coins to allow for better filtering/sorting locally
+            # Use asyncio.to_thread to run the blocking API call in a separate thread
+            self.coins = await asyncio.to_thread(client.get_top_coins, limit=100)
+            logger.info(f"Fetched {len(self.coins)} coins for CoinList")
+        except TerminalCoinException as e:
+            logger.error(f"Error loading coins: {e.message}")
+            self.app.notify(f"Error loading coins: {e.message}", severity="warning")
+        except Exception as e:
+            logger.error(f"Unexpected error loading coins: {e}")
+            self.app.notify("Error loading coins", severity="error")
 
 
 class CoinDetail(Static):
@@ -191,7 +300,8 @@ class CoinDetail(Static):
         yield Container(
             Label("Select a coin to view details", id="coin-name"),
             Label("", id="coin-price"),
-            Label("", id="sparkline-label"),
+            # Chart replaces the sparkline label
+            CryptoChart(id="price-chart"),
             Label("", id="coin-stats"),
             id="detail-container"
         )
@@ -218,10 +328,6 @@ class CoinDetail(Static):
             low_24h = data.low_24h
             market_cap = data.market_cap
 
-            # Generate sparkline
-            prices_7d = data.sparkline_7d
-            sparkline_art = generate_sparkline(prices_7d, width=50) if prices_7d else "No data"
-
             # Format stats
             stats_text = (
                 f"High 24h: {format_currency(high_24h)}\n"
@@ -232,7 +338,6 @@ class CoinDetail(Static):
             # Update labels
             self.query_one("#coin-name", Label).update(name)
             self.query_one("#coin-price", Label).update(price)
-            self.query_one("#sparkline-label", Label).update(f"[7 Day Trend]\n{sparkline_art}")
             self.query_one("#coin-stats", Label).update(stats_text)
 
             logger.debug(f"Updated coin detail for {data.name}")
@@ -240,6 +345,14 @@ class CoinDetail(Static):
         except Exception as e:
             logger.error(f"Error updating coin detail: {e}")
             self.notify("Error displaying coin details", severity="error")
+
+    def update_chart(self, prices: list, dates: list):
+        """Update the chart with new data."""
+        try:
+            chart = self.query_one("#price-chart", CryptoChart)
+            chart.update_data(prices, dates, title="30 Day History")
+        except Exception as e:
+            logger.error(f"Error updating chart: {e}")
 
 
 class NewsPanel(Static):
@@ -250,7 +363,7 @@ class NewsPanel(Static):
     def compose(self) -> ComposeResult:
         """Compose the news panel widget."""
         yield Label("Latest Crypto News", classes="news-header")
-        yield Container(id="news-list")
+        yield VerticalScroll(id="news-list")
 
     def watch_news_data(self, news_items: list) -> None:
         """
@@ -259,7 +372,7 @@ class NewsPanel(Static):
         Args:
             news_items: List of NewsItem objects
         """
-        news_list_container = self.query_one("#news-list", Container)
+        news_list_container = self.query_one("#news-list", VerticalScroll)
         news_list_container.remove_children()
 
         for item in news_items:
@@ -291,6 +404,15 @@ class NewsPanel(Static):
 
         logger.debug(f"Updated news panel with {len(news_items)} items")
 
+    async def fetch_news(self, client) -> None:
+        """Fetch cryptocurrency news and update the widget asynchronously."""
+        try:
+            self.news_data = await asyncio.to_thread(client.fetch_news, limit=5)
+            logger.info(f"Fetched {len(self.news_data)} news items")
+        except Exception as e:
+            logger.error(f"Error loading news: {e}")
+            # Don't notify user for news errors, fail silently
+
 
 # =============================================================================
 # MAIN APPLICATION
@@ -300,123 +422,183 @@ class TerminalCoinApp(App):
     """TerminalCoin - A terminal-based cryptocurrency tracker."""
 
     CSS = """
+    /* --- Global Layout --- */
     Screen {
-        layout: grid;
-        grid-size: 2 1;
-        grid-columns: 1fr 2fr;
-    }
-
-    #app-grid {
-        layout: grid;
-        grid-rows: 2fr 1fr;
-    }
-
-    /* --- Sidebar (Coin List) --- */
-    CoinList {
+        layout: vertical;
         height: 100%;
-        border: solid $primary;
-        margin-right: 1;
+        background: $surface;
+    }
+
+    /* --- Tab Layout --- */
+    TabbedContent {
+        height: 1fr;
+    }
+
+    TabPane {
+        height: 1fr;
+        padding: 0;
+    }
+
+    /* --- Main Container (Horizontal Split) --- */
+    #main-container {
+        height: 1fr;
+        width: 100%;
+        layout: horizontal;
+    }
+
+    /* --- Left Pane (Coin List) --- */
+    CoinList {
+        width: 35%;
+        height: 1fr;
+        border-right: heavy $primary;
+        background: $surface-darken-1;
+    }
+
+    #list-controls {
+        height: auto;
+        padding: 1;
+        background: $surface-darken-1;
+        border-bottom: solid $primary;
+    }
+
+    #coin-search {
+        width: 100%;
+        margin-bottom: 1;
+        background: $surface;
+        border: solid $secondary;
+        color: $text;
+    }
+
+    .filter-bar {
+        height: auto;
+        width: 100%;
+        align: center middle;
+    }
+
+    .sort-btn {
+        width: 1fr;
+        margin: 0 1;
+        min-width: 8;
     }
 
     .list-header {
         text-align: center;
         background: $primary;
-        color: $background;
+        color: $background; /* High contrast text */
         text-style: bold;
         padding: 1;
         width: 100%;
     }
 
     DataTable {
-        height: 100%;
+        height: 1fr;
+        width: 100%;
         scrollbar-gutter: stable;
+        background: $surface-darken-1;
     }
 
     DataTable > .datatable--header {
-        text-style: bold;
         color: $secondary;
-    }
-
-    DataTable > .datatable--cursor {
-        background: $primary;
-        color: $background;
         text-style: bold;
     }
 
-    /* --- Main Content (Detail) --- */
+    /* --- Right Pane (Vertical Split) --- */
+    #right-pane {
+        width: 65%;
+        height: 1fr;
+        layout: vertical;
+    }
+
+    /* --- Coin Detail Section --- */
     CoinDetail {
-        height: 100%;
-        border: solid $secondary;
-        padding: 2;
-        align: center middle;
+        height: 60%;
+        width: 100%;
+        border: heavy $secondary; /* Neon Blue Border */
+        background: $surface;
+        padding: 1;
     }
 
     #detail-container {
-        height: auto;
-        border: heavy $secondary;
-        background: $surface;
-        padding: 2;
+        height: 1fr;
+        width: 100%;
+        layout: vertical;
     }
 
     #coin-name {
         text-align: center;
         text-style: bold;
+        background: $surface-lighten-1;
         color: $secondary;
-        margin-bottom: 1;
-        border-bottom: solid $secondary;
+        width: 100%;
+        padding: 1;
+        border: solid $secondary;
     }
 
     #coin-price {
         text-align: center;
         text-style: bold;
         color: $primary;
-        margin-top: 1;
-        margin-bottom: 2;
+        width: 100%;
         padding: 1;
-        border: dashed $primary;
+        border-bottom: dashed $primary;
+        margin-bottom: 1;
+        background: $surface-darken-1;
+    }
+
+    #price-chart {
+        height: 1fr;
+        width: 100%;
+        border: solid $accent;
+        margin: 1 0;
+        background: $surface-darken-1;
     }
 
     #coin-stats {
         text-align: left;
+        width: 100%;
         padding: 1;
-    }
-
-    #sparkline-label {
-        color: $success;
-        text-align: center;
-        margin-bottom: 1;
+        background: $surface-darken-1;
+        border-top: solid $secondary;
+        color: $text;
     }
 
     /* --- News Panel --- */
     NewsPanel {
-        height: 100%;
-        border: solid $accent;
-        margin-top: 1;
+        height: 40%;
+        width: 100%;
+        border-top: heavy $primary;
+        background: $surface;
+        padding: 1;
     }
 
     .news-header {
         text-align: center;
-        background: $accent;
+        background: $secondary;
         color: $background;
         text-style: bold;
-        padding: 1;
         width: 100%;
+        padding: 1;
+        margin-bottom: 1;
     }
 
-    #news-list {
-        height: 100%;
-        overflow: auto;
-        padding: 1;
+    .news-scroll {
+        height: 1fr;
+        width: 100%;
+        scrollbar-gutter: stable;
     }
 
     .news-item {
         margin-bottom: 1;
+        padding: 1;
+        background: $surface-lighten-1;
+        border-left: solid $accent;
     }
     """
 
     BINDINGS = [
         ("q", "quit", "Quit"),
         ("r", "refresh", "Refresh"),
+        ("p", "command_palette", "Palette"),
     ]
 
     def __init__(self):
@@ -430,16 +612,27 @@ class TerminalCoinApp(App):
         # Initialize API clients
         self.coin_client: Optional[CoinGeckoClient] = None
         self.news_client = get_news_client()
+        self.portfolio_manager = PortfolioManager()
 
         logger.info(f"TerminalCoin v{app_config.VERSION} initialized")
 
     def compose(self) -> ComposeResult:
         """Compose the application layout."""
         yield Header(show_clock=True)
-        yield CoinList()
-        with Container(id="app-grid"):
-            yield CoinDetail()
-            yield NewsPanel()
+
+        with TabbedContent(initial="market"):
+            with TabPane("Market", id="market"):
+                # Use Horizontal for main split
+                with Horizontal(id="main-container"):
+                    yield CoinList()
+                    # Use Vertical for right pane split
+                    with Vertical(id="right-pane"):
+                        yield CoinDetail()
+                        yield NewsPanel()
+
+            with TabPane("Portfolio", id="portfolio"):
+                yield PortfolioTable()
+
         yield Footer()
 
     def on_mount(self) -> None:
@@ -452,16 +645,20 @@ class TerminalCoinApp(App):
             self.coin_client = CoinGeckoClient()
 
             # Load initial data
-            self.load_data()
+            self.refresh_data()
 
             # Set up auto-refresh
-            self.set_interval(app_config.REFRESH_INTERVAL, self.load_data)
+            self.set_interval(app_config.REFRESH_INTERVAL, self.refresh_data)
 
             # Show welcome notification
             self.notify(
-                "Press Ctrl+P and type 'theme' to change colors",
-                timeout=3
+                f"Welcome to {app_config.APP_NAME} v{app_config.VERSION}",
+                title="Ready",
+                severity="information"
             )
+
+            # Set focus to the coin list so keyboard navigation works immediately
+            self.query_one(CoinList).focus()
 
             logger.info("Application mounted successfully")
 
@@ -469,61 +666,39 @@ class TerminalCoinApp(App):
             logger.error(f"Error during mount: {e}")
             self.notify(f"Error initializing app: {e}", severity="error")
 
-    def load_data(self) -> None:
-        """Load coin and news data."""
+    def refresh_data(self) -> None:
+        """Refresh all data sources."""
+        self.notify("Refreshing data...", severity="information")
+
+        # 1. Refresh Market Data
+        if self.coin_client:
+            self.run_worker(self.query_one(CoinList).fetch_coins(self.coin_client), group="refresh")
+
+        # 2. Refresh News
+        self.run_worker(self.query_one(NewsPanel).fetch_news(self.news_client), group="refresh")
+
+        # 3. Refresh Portfolio
+        self._refresh_portfolio()
+
+    def _refresh_portfolio(self) -> None:
+        """Update portfolio view with current prices."""
         try:
-            self.load_coins()
-            self.load_news()
-        except Exception as e:
-            logger.error(f"Error loading data: {e}")
-            self.notify("Error loading data", severity="error")
+            # Create a map of current prices from the coin list
+            # Note: Ideally we should fetch specific prices for portfolio coins,
+            # but for efficiency we'll use the top coins list if available.
+            current_prices = {}
+            coin_list_widget = self.query_one(CoinList)
+            if coin_list_widget.coins:
+                for coin in coin_list_widget.coins:
+                    current_prices[coin.id] = coin.current_price
 
-    def load_coins(self) -> None:
-        """Load top cryptocurrencies."""
-        if not self.coin_client:
-            logger.warning("Coin client not initialized")
-            return
-
-        try:
-            coins = self.coin_client.get_top_coins(limit=50)
-
-            table = self.query_one(DataTable)
-            table.clear()
-
-            for coin in coins:
-                try:
-                    price = format_currency(coin.current_price)
-                    change = format_percentage(coin.price_change_percentage_24h or 0.0)
-
-                    table.add_row(
-                        str(coin.market_cap_rank or "N/A"),
-                        coin.symbol,
-                        price,
-                        change,
-                        key=coin.id
-                    )
-                except Exception as e:
-                    logger.warning(f"Error adding coin row: {e}")
-                    continue
-
-            logger.info(f"Loaded {len(coins)} coins")
-
-        except TerminalCoinException as e:
-            logger.error(f"Error loading coins: {e.message}")
-            self.notify(f"Error loading coins: {e.message}", severity="warning")
-        except Exception as e:
-            logger.error(f"Unexpected error loading coins: {e}")
-
-    def load_news(self) -> None:
-        """Load cryptocurrency news."""
-        try:
-            news_items = self.news_client.fetch_news(limit=5)
-            self.query_one(NewsPanel).news_data = news_items
-            logger.info(f"Loaded {len(news_items)} news items")
+            # Update portfolio table
+            items = self.portfolio_manager.get_portfolio_summary(current_prices)
+            self.query_one(PortfolioTable).items = items
 
         except Exception as e:
-            logger.error(f"Error loading news: {e}")
-            # Don't notify user for news errors, fail silently
+            logger.error(f"Error refreshing portfolio: {e}")
+            self.notify("Error refreshing portfolio", severity="error")
 
     def on_data_table_row_selected(self, event: DataTable.RowSelected) -> None:
         """
@@ -533,12 +708,17 @@ class TerminalCoinApp(App):
             event: Row selection event
         """
         coin_id = event.row_key.value
+        logger.info(f"Row selected: {coin_id}")
         if coin_id:
             self.fetch_and_show_details(coin_id)
 
+    # Cache for coin details: {coin_id: (timestamp, data, history)}
+    _coin_details_cache: dict = {}
+    CACHE_TTL = 300  # 5 minutes
+
     def fetch_and_show_details(self, coin_id: str) -> None:
         """
-        Fetch and display detailed coin information.
+        Fetch and display detailed coin information asynchronously.
 
         Args:
             coin_id: Coin identifier
@@ -547,10 +727,43 @@ class TerminalCoinApp(App):
             logger.warning("Coin client not initialized")
             return
 
+        # Check cache first
+        now = datetime.utcnow().timestamp()
+        if coin_id in self._coin_details_cache:
+            timestamp, data, history = self._coin_details_cache[coin_id]
+            if now - timestamp < self.CACHE_TTL:
+                logger.info(f"Using cached details for {coin_id}")
+                self._update_detail_ui(data, history)
+                return
+
+        # Run API calls in a worker thread to avoid freezing UI
+        self.run_worker(self._fetch_details_worker(coin_id), exclusive=True, group="coin_fetch")
+
+    def _update_detail_ui(self, data: CoinDetailData, history: dict) -> None:
+        """Update the detail UI with provided data."""
+        self.query_one(CoinDetail).coin_data = data
+
+        prices_data = history.get("prices", [])
+        if prices_data:
+            dates = [datetime.fromtimestamp(p[0]/1000).strftime("%d/%m/%Y") for p in prices_data]
+            prices = [p[1] for p in prices_data]
+            self.query_one(CoinDetail).update_chart(prices, dates)
+
+    async def _fetch_details_worker(self, coin_id: str) -> None:
+        """Worker function to fetch details in background."""
         try:
-            data = self.coin_client.get_coin_details(coin_id)
+            # 1. Get Basic Details
+            data = await asyncio.to_thread(self.coin_client.get_coin_details, coin_id)
+
             if data:
-                self.query_one(CoinDetail).coin_data = data
+                # 2. Get Historical Data for Chart (30 days)
+                history = await asyncio.to_thread(self.coin_client.get_historical_data, coin_id, days=30)
+
+                # Update Cache
+                self._coin_details_cache[coin_id] = (datetime.utcnow().timestamp(), data, history)
+
+                # Update UI
+                self._update_detail_ui(data, history)
             else:
                 self.notify(f"Could not load details for {coin_id}", severity="warning")
 
@@ -563,8 +776,7 @@ class TerminalCoinApp(App):
 
     def action_refresh(self) -> None:
         """Refresh all data."""
-        self.notify("Refreshing data...")
-        self.load_data()
+        self.refresh_data()
 
     def on_unmount(self) -> None:
         """Clean up when app is unmounted."""

@@ -27,8 +27,10 @@ from utils import validate_coin_id
 logger = get_logger(__name__)
 
 
+import threading
+
 class RateLimiter:
-    """Simple rate limiter for API calls."""
+    """Simple thread-safe rate limiter for API calls."""
 
     def __init__(self, max_calls: int, period: int):
         """
@@ -41,6 +43,7 @@ class RateLimiter:
         self.max_calls = max_calls
         self.period = period
         self.calls: List[datetime] = []
+        self._lock = threading.Lock()
 
     def __call__(self, func):
         """Decorator to apply rate limiting."""
@@ -51,23 +54,30 @@ class RateLimiter:
 
     def _wait_if_needed(self) -> None:
         """Wait if rate limit would be exceeded."""
-        now = datetime.utcnow()
+        while True:
+            sleep_time = 0
+            with self._lock:
+                now = datetime.utcnow()
 
-        # Remove old calls outside the time window
-        self.calls = [
-            call_time for call_time in self.calls
-            if now - call_time < timedelta(seconds=self.period)
-        ]
+                # Remove old calls outside the time window
+                self.calls = [
+                    call_time for call_time in self.calls
+                    if now - call_time < timedelta(seconds=self.period)
+                ]
 
-        # Check if we need to wait
-        if len(self.calls) >= self.max_calls:
-            sleep_time = (self.calls[0] + timedelta(seconds=self.period) - now).total_seconds()
+                # Check if we need to wait
+                if len(self.calls) >= self.max_calls:
+                    sleep_time = (self.calls[0] + timedelta(seconds=self.period) - now).total_seconds()
+                else:
+                    # If we don't need to wait, register the call and break loop
+                    self.calls.append(now)
+                    return
+
+            # Sleep OUTSIDE the lock
             if sleep_time > 0:
                 logger.warning(f"Rate limit reached. Waiting {sleep_time:.2f}s")
                 time.sleep(sleep_time)
-                self.calls = []
-
-        self.calls.append(now)
+                # Loop continues to check again after sleeping
 
 
 class CoinGeckoClient:
@@ -225,7 +235,7 @@ class CoinGeckoClient:
             "order": "market_cap_desc",
             "per_page": limit,
             "page": 1,
-            "sparkline": "false"
+            "sparkline": "true"
         }
 
         try:
@@ -290,6 +300,38 @@ class CoinGeckoClient:
         except Exception as e:
             logger.error(f"Failed to fetch coin details for {coin_id}: {e}")
             return None
+
+    def get_historical_data(self, coin_id: str, days: int = 30) -> Dict[str, List]:
+        """
+        Fetch historical price data (market chart).
+
+        Args:
+            coin_id: Coin identifier
+            days: Number of days of history (1, 7, 14, 30, 90, 180, 365, max)
+
+        Returns:
+            Dictionary with 'prices', 'market_caps', 'total_volumes'
+
+        Raises:
+            ValidationException: If inputs are invalid
+        """
+        if not validate_coin_id(coin_id):
+            raise ValidationException("Invalid coin ID", details={"coin_id": coin_id})
+
+        params = {
+            "vs_currency": "usd",
+            "days": str(days),
+            "interval": "daily" if days > 1 else "hourly"
+        }
+
+        try:
+            data = self._make_request(f"coins/{coin_id}/market_chart", params)
+            logger.info(f"Fetched {days} days of history for {coin_id}")
+            return data
+
+        except Exception as e:
+            logger.error(f"Failed to fetch history for {coin_id}: {e}")
+            return {}
 
     def close(self) -> None:
         """Close the HTTP session."""

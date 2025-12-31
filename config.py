@@ -58,7 +58,7 @@ class AppConfig:
 
     # UI Configuration
     REFRESH_INTERVAL: int = 60  # seconds
-    DEFAULT_THEME: str = "matrix"
+    DEFAULT_THEME: str = "cyberpunk"
 
     # Logging
     LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO")

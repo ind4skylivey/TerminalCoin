@@ -11,6 +11,12 @@ pydantic>=2.0.0
 # HTTP retry logic
 urllib3>=2.0.0
 
+# Data Analysis & Charting (v3.0)
+pandas>=2.0.0
+pandas-ta>=0.3.14b0
+textual-plotext>=0.2.0
+plotext>=5.2.8
+
 # Development dependencies (optional)
 # pytest>=7.4.0
 # pytest-cov>=4.1.0
