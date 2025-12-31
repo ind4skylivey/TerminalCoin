@@ -112,7 +112,7 @@ python app.py
 
 - **[ARCHITECTURE.md](ARCHITECTURE.md)** - Code architecture and design patterns
 - **[SECURITY.md](SECURITY.md)** - Security policy and best practices
-- **[REFACTORING.md](REFACTORING.md)** - Version 2.0 refactoring details
+- **[REFACTORING.md
 
 ## 🗺️ Roadmap
 
